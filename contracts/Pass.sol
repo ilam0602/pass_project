@@ -17,6 +17,8 @@ contract Pass is ERC1155, Ownable {
     // Mapping from user address and pass ID to its expiration time
     mapping(address => mapping(uint256 => uint256)) public passExpirationTime;
 
+    // Mapping to keep track of active loans (lender's address and passId to Loan details)
+    mapping(address => mapping(uint256 => Loan)) public activeLoans;
 
     // Loan struct to represent an active loan
     struct Loan {
@@ -25,9 +27,6 @@ contract Pass is ERC1155, Ownable {
         uint256 endTime;
         bool returned;
     }
-
-    // Mapping to keep track of active loans (lender's address and passId to Loan details)
-    mapping(address => mapping(uint256 => Loan)) public activeLoans;
 
     constructor() ERC1155("URI GOES HERE/{id}") {}
 
@@ -64,12 +63,12 @@ contract Pass is ERC1155, Ownable {
     }
 
 
-    function setPassPrice(uint256 passId, uint256 _price) external onlyOwner {
+    function setPassPrice(uint256 passId, uint256 _price) public onlyOwner {
         passPrice[passId] = _price;
     }
 
     // Users can buy a pass by sending ether
-    function purchasePass(uint256 passId) external payable {
+    function purchasePass(uint256 passId) public payable {
         require(msg.value == passPrice[passId], "Passes: Incorrect Ether sent");
         require(balanceOf(address(this), passId) > 0, "Passes: Out of stock");
         require(block.timestamp >= passSaleStartTime[passId], "Passes: Sale has not started for this pass");
@@ -85,7 +84,7 @@ contract Pass is ERC1155, Ownable {
     }
 
     // Users can reactivate an expired pass
-    function reactivatePass(uint256 passId) external payable {
+    function reactivatePass(uint256 passId) public payable {
         require(msg.value == passPrice[passId], "Passes: Incorrect Ether sent");
         require(balanceOf(msg.sender, passId) > 0, "Passes: You don't own this pass");
         require(block.timestamp > passExpirationTime[msg.sender][passId], "Passes: This pass has not expired yet");
@@ -99,7 +98,7 @@ contract Pass is ERC1155, Ownable {
 
     // Owner can mint new passes in advance and set a sale start time
 // Updated mintPass function to include price setting
-    function mintPass(uint256 amount, uint256 saleStartTime, uint256 _price, bytes memory data) external onlyOwner {
+    function mintPass(uint256 amount, uint256 saleStartTime, uint256 _price, bytes memory data) public onlyOwner {
         require(saleStartTime >= block.timestamp, "Passes: Sale start time should be in the future");
 
         // Set the price for the newly minted pass
@@ -112,7 +111,7 @@ contract Pass is ERC1155, Ownable {
 
 
     // Function to allow lending of a pass
-    function lendPass(address borrower, uint256 passId, uint256 duration) external {
+    function lendPass(address borrower, uint256 passId, uint256 duration) public {
         require(balanceOf(msg.sender, passId) > 0, "You don't own this pass");
         require(activeLoans[msg.sender][passId].borrower == address(0), "This pass is already lent out");
 
@@ -129,7 +128,7 @@ contract Pass is ERC1155, Ownable {
     }
 
     // Function to end the loan and return the pass
-    function endLoan(uint256 passId) external {
+    function endLoan(uint256 passId) public {
         Loan storage loan = activeLoans[msg.sender][passId];
         
         require(loan.borrower != address(0), "No active loan found for this pass");
@@ -141,6 +140,12 @@ contract Pass is ERC1155, Ownable {
         
         // Delete the loan data
         delete activeLoans[msg.sender][passId];
+    }
+
+    // TODO: Check this implementation
+    // Function to check whether a pass is expired or not
+    function isPassExpired(address passHolder, uint256 passId) public view returns(bool){
+        return passExpirationTime[passHolder][passId] < block.timestamp;
     }
 
 }
