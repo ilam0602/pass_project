@@ -4,6 +4,10 @@ pragma solidity ^0.8.9;
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
+interface IPreviousCollection {
+    function balanceOf(address owner) external view returns (uint256);
+}
+
 contract Pass is ERC1155, Ownable {
     uint256 public nextPassId = 0;
     uint256 public passDuration = 365 days;
@@ -19,6 +23,8 @@ contract Pass is ERC1155, Ownable {
 
     // Mapping to keep track of active loans (lender's address and passId to Loan details)
     mapping(address => mapping(uint256 => Loan)) public activeLoans;
+
+    address public previousCollectionAddress;
 
     // Loan struct to represent an active loan
     struct Loan {
@@ -67,10 +73,24 @@ contract Pass is ERC1155, Ownable {
         passPrice[passId] = _price;
     }
 
+    function setPreviousCollectionAddress(address _previousCollectionAddress) external onlyOwner {
+        previousCollectionAddress = _previousCollectionAddress;
+    }
+    function ownsPreviousCollectionNFT(address _user) internal view returns (bool) {
+        IPreviousCollection prevCollection = IPreviousCollection(previousCollectionAddress);
+        return prevCollection.balanceOf(_user) > 0;
+    }
+
     // Users can buy a pass by sending ether
     function purchasePass(uint256 passId) public payable {
-        //TODO: GIVE 1 ETH DISCOUNT IF HOLDER
-        require(msg.value == passPrice[passId], "Passes: Incorrect Ether sent");
+        uint256 requiredPrice = passPrice[passId];
+        uint256 priceToPay = requiredPrice;
+
+        if (ownsPreviousCollectionNFT(msg.sender)) {
+            priceToPay = requiredPrice - 1 ether; // Discount of 1 Ether for this purchase context
+        }
+
+        require(msg.value >= priceToPay, "Passes: Incorrect Ether sent");
         require(balanceOf(address(this), passId) > 0, "Passes: Out of stock");
         require(block.timestamp >= passSaleStartTime[passId], "Passes: Sale has not started for this pass");
 
@@ -147,7 +167,5 @@ contract Pass is ERC1155, Ownable {
     function isPassExpired(address passHolder, uint256 passId) public view returns(bool){
         return passExpirationTime[passHolder][passId] < block.timestamp;
     }
-
-    // Function to check whether user oi
 
 }
