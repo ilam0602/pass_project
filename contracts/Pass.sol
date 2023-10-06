@@ -69,6 +69,7 @@ contract Pass is ERC1155, Ownable {
 
     // Users can buy a pass by sending ether
     function purchasePass(uint256 passId) public payable {
+        //TODO: GIVE 1 ETH DISCOUNT IF HOLDER
         require(msg.value == passPrice[passId], "Passes: Incorrect Ether sent");
         require(balanceOf(address(this), passId) > 0, "Passes: Out of stock");
         require(block.timestamp >= passSaleStartTime[passId], "Passes: Sale has not started for this pass");
@@ -142,10 +143,11 @@ contract Pass is ERC1155, Ownable {
         delete activeLoans[msg.sender][passId];
     }
 
-    // TODO: Check this implementation
     // Function to check whether a pass is expired or not
     function isPassExpired(address passHolder, uint256 passId) public view returns(bool){
         return passExpirationTime[passHolder][passId] < block.timestamp;
     }
+
+    // Function to check whether user oi
 
 }
