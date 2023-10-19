@@ -11,6 +11,7 @@ interface IPreviousCollection {
 contract Pass is ERC1155, Ownable {
     uint256 public nextPassId = 0;
     uint256 public passDuration = 365 days;
+    uint256 public discount = .00005 ether;
 
     // Mapping from pass ID to its price
     mapping(uint256 => uint256) public passPrice;
@@ -76,7 +77,10 @@ contract Pass is ERC1155, Ownable {
     function setPreviousCollectionAddress(address _previousCollectionAddress) external onlyOwner {
         previousCollectionAddress = _previousCollectionAddress;
     }
-    function ownsPreviousCollectionNFT(address _user) internal view returns (bool) {
+
+
+    //change to internal when done testing
+    function ownsPreviousCollectionNFT(address _user) public view returns (bool) {
         IPreviousCollection prevCollection = IPreviousCollection(previousCollectionAddress);
         return prevCollection.balanceOf(_user) > 0;
     }
@@ -87,15 +91,16 @@ contract Pass is ERC1155, Ownable {
         uint256 priceToPay = requiredPrice;
 
         if (ownsPreviousCollectionNFT(msg.sender)) {
-            priceToPay = requiredPrice - 1 ether; // Discount of 1 Ether for this purchase context
+            priceToPay = requiredPrice - discount; // Discount of 1 Ether for this purchase context
         }
 
         require(msg.value >= priceToPay, "Passes: Incorrect Ether sent");
-        require(balanceOf(address(this), passId) > 0, "Passes: Out of stock");
+        require(balanceOf(owner(), passId) > 0, "Passes: Out of stock");
         require(block.timestamp >= passSaleStartTime[passId], "Passes: Sale has not started for this pass");
 
         // Transfer the NFT to the purchaser
-        safeTransferFrom(address(this), msg.sender, passId, 1, "");
+        //MAKE SURE ITS SAFE TO USE _
+        _safeTransferFrom(address(owner()), msg.sender, passId, 1, "");
 
         // Set the expiration time for the pass for this specific user
         passExpirationTime[msg.sender][passId] = block.timestamp + passDuration;
@@ -118,14 +123,14 @@ contract Pass is ERC1155, Ownable {
     }
 
     // Owner can mint new passes in advance and set a sale start time
-// Updated mintPass function to include price setting
+    // Updated mintPass function to include price setting
     function mintPass(uint256 amount, uint256 saleStartTime, uint256 _price, bytes memory data) public onlyOwner {
         require(saleStartTime >= block.timestamp, "Passes: Sale start time should be in the future");
 
         // Set the price for the newly minted pass
         passPrice[nextPassId] = _price;
 
-        _mint(address(this), nextPassId, amount, data);  // Minting to the contract itself
+        _mint(address(owner()), nextPassId, amount, data);  // Minting to the contract itself
         passSaleStartTime[nextPassId] = saleStartTime;
         nextPassId++;
     }
@@ -137,6 +142,7 @@ contract Pass is ERC1155, Ownable {
         require(activeLoans[msg.sender][passId].borrower == address(0), "This pass is already lent out");
 
         // Transfer pass to borrower
+        //MAKE SURE THIS IS LOCKED
         safeTransferFrom(msg.sender, borrower, passId, 1, "");
 
         // Record the loan details
@@ -149,6 +155,7 @@ contract Pass is ERC1155, Ownable {
     }
 
     // Function to end the loan and return the pass
+    // TODO: ONLY PEOPLE INVOLVED CAN CALL THIS FUNCTION
     function endLoan(uint256 passId) public {
         Loan storage loan = activeLoans[msg.sender][passId];
         
@@ -166,6 +173,9 @@ contract Pass is ERC1155, Ownable {
     // Function to check whether a pass is expired or not
     function isPassExpired(address passHolder, uint256 passId) public view returns(bool){
         return passExpirationTime[passHolder][passId] < block.timestamp;
+    }
+    function approveContract() external onlyOwner {
+        this.setApprovalForAll(address(this), true);
     }
 
 }
