@@ -11,7 +11,7 @@ interface IPreviousCollection {
 contract Pass is ERC1155, Ownable {
     uint256 public nextPassId = 0;
     uint256 public passDuration = 365 days;
-    uint256 public discount = .00005 ether;
+    uint256 public priceInc = .0005 ether;
 
     // Mapping from pass ID to its price
     mapping(uint256 => uint256) public passPrice;
@@ -22,20 +22,12 @@ contract Pass is ERC1155, Ownable {
     // Mapping from user address and pass ID to its expiration time
     mapping(address => mapping(uint256 => uint256)) public passExpirationTime;
 
-    // Mapping to keep track of active loans (lender's address and passId to Loan details)
-    mapping(address => mapping(uint256 => Loan)) public activeLoans;
 
     address public previousCollectionAddress;
 
-    // Loan struct to represent an active loan
-    struct Loan {
-        address borrower;
-        uint256 startTime;
-        uint256 endTime;
-        bool returned;
-    }
 
-    constructor() ERC1155("URI GOES HERE/{id}") {}
+
+    constructor() ERC1155("https://ipfs.io/ipfs/QmPDQhkcyobcuf7DwTobAiqf84W2uGQ1rregKSrXX5s3Cw/{id}.json") {}
 
     // Overriding the safeTransferFrom function to handle expiration time during transfers
     function safeTransferFrom(address from, address to, uint256 id, uint256 amount, bytes memory data) public override {
@@ -85,22 +77,48 @@ contract Pass is ERC1155, Ownable {
         return prevCollection.balanceOf(_user) > 0;
     }
 
-    // Users can buy a pass by sending ether
-    function purchasePass(uint256 passId) public payable {
-        uint256 requiredPrice = passPrice[passId];
-        uint256 priceToPay = requiredPrice;
+    function getPassPrice(uint256 passId,uint256 qty) public view returns (uint256) {
+        uint256 passesLeft = balanceOf(owner(), passId);
+        uint256 currPrice = passPrice[passId];
 
-        if (ownsPreviousCollectionNFT(msg.sender)) {
-            priceToPay = requiredPrice - discount; // Discount of 1 Ether for this purchase context
+        uint256 passesLeftCurrPrice = passesLeft % 5;
+        if(passesLeftCurrPrice == 0){
+            passesLeftCurrPrice = 5;
         }
 
-        require(msg.value >= priceToPay, "Passes: Incorrect Ether sent");
+        if(qty <= passesLeftCurrPrice){
+            return currPrice * qty;
+        }
+        
+        uint256 totalPrice = passesLeftCurrPrice * currPrice;
+
+        currPrice += priceInc;
+
+        uint256 restOfPasses = qty - passesLeftCurrPrice;
+
+        uint256 numPriceInc = restOfPasses / 5;
+
+        uint256 remain = restOfPasses % 5;
+
+        for(uint i = 0; i < numPriceInc;i++){
+            totalPrice += currPrice * 5;
+            currPrice += priceInc;
+        }
+
+        totalPrice += remain * currPrice;
+
+        return totalPrice;
+    }
+
+    // Users can buy a pass by sending ether
+    function purchasePass(uint256 passId, uint qty) public payable {
+        require(ownsPreviousCollectionNFT(msg.sender) == true);
+        require(msg.value >= getPassPrice(passId,qty), "Passes: Incorrect Ether sent");
         require(balanceOf(owner(), passId) > 0, "Passes: Out of stock");
         require(block.timestamp >= passSaleStartTime[passId], "Passes: Sale has not started for this pass");
 
         // Transfer the NFT to the purchaser
-        //MAKE SURE ITS SAFE TO USE _
-        _safeTransferFrom(address(owner()), msg.sender, passId, 1, "");
+        _safeTransferFrom(address(owner()), msg.sender, passId, qty, "");
 
         // Set the expiration time for the pass for this specific user
         passExpirationTime[msg.sender][passId] = block.timestamp + passDuration;
@@ -108,6 +126,7 @@ contract Pass is ERC1155, Ownable {
         // Transfer the payment to the owner
         payable(owner()).transfer(msg.value);
     }
+
 
     // Users can reactivate an expired pass
     function reactivatePass(uint256 passId) public payable {
@@ -136,46 +155,9 @@ contract Pass is ERC1155, Ownable {
     }
 
 
-    // Function to allow lending of a pass
-    function lendPass(address borrower, uint256 passId, uint256 duration) public {
-        require(balanceOf(msg.sender, passId) > 0, "You don't own this pass");
-        require(activeLoans[msg.sender][passId].borrower == address(0), "This pass is already lent out");
-
-        // Transfer pass to borrower
-        //MAKE SURE THIS IS LOCKED
-        safeTransferFrom(msg.sender, borrower, passId, 1, "");
-
-        // Record the loan details
-        activeLoans[msg.sender][passId] = Loan({
-            borrower: borrower,
-            startTime: block.timestamp,
-            endTime: block.timestamp + duration,
-            returned: false
-        });
-    }
-
-    // Function to end the loan and return the pass
-    // TODO: ONLY PEOPLE INVOLVED CAN CALL THIS FUNCTION
-    function endLoan(uint256 passId) public {
-        Loan storage loan = activeLoans[msg.sender][passId];
-        
-        require(loan.borrower != address(0), "No active loan found for this pass");
-        require(!loan.returned, "This pass has already been returned");
-        require(loan.borrower == msg.sender || block.timestamp >= loan.endTime, "Only the borrower can return before the end time");
-        
-        // Transfer pass back to owner from borrower
-        safeTransferFrom(loan.borrower, msg.sender, passId, 1, "");
-        
-        // Delete the loan data
-        delete activeLoans[msg.sender][passId];
-    }
-
     // Function to check whether a pass is expired or not
     function isPassExpired(address passHolder, uint256 passId) public view returns(bool){
         return passExpirationTime[passHolder][passId] < block.timestamp;
-    }
-    function approveContract() external onlyOwner {
-        this.setApprovalForAll(address(this), true);
     }
 
 }

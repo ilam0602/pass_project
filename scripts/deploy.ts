@@ -15,13 +15,12 @@ async function main() {
    const amount: BigNumberish = 100; // Replace with your actual value
    const saleStartTime: BigNumberish =(await ethers.provider.getBlock("latest")).timestamp + 60;
  
-   const _price: BigNumberish = parseEther("0.0001"); // 1 ETH = 1e18 Wei 
+   const _price: BigNumberish = parseEther((1.5 * .001).toString()); // 1 ETH = 1e18 Wei 
    const data: BytesLike = "0x"; // Replace with your actual value
  
    // Call the mintPass function with the arguments
    await pass.mintPass(amount, saleStartTime, _price, data); 
-   await pass.setApprovalForAll(pass.target,true);
-   await pass.setPreviousCollectionAddress("0x27C1C9e6e23a2A83b8d6462017a0b1fc066d4ab6");
+   await pass.setPreviousCollectionAddress("0xEf861b08F9b013F1642D93d3A344C5426F8a5e14");
 
 }
 
