@@ -117,6 +117,17 @@ contract Pass is ERC1155, Ownable {
         require(balanceOf(owner(), passId) > 0, "Passes: Out of stock");
         require(block.timestamp >= passSaleStartTime[passId], "Passes: Sale has not started for this pass");
 
+        uint256 passesLeft = balanceOf(owner(), passId);
+        uint256 passesLeftCurrPrice = passesLeft % 5;
+        if(passesLeftCurrPrice == 0){
+            passesLeftCurrPrice = 5;
+        }
+        uint256 restOfPasses = qty - passesLeftCurrPrice;
+        if(qty > passesLeftCurrPrice){
+            uint256 numPriceInc = restOfPasses/5;
+            passPrice[passId] += numPriceInc* priceInc;
+        }
+
         // Transfer the NFT to the purchaser
         _safeTransferFrom(address(owner()), msg.sender, passId, qty, "");
 
