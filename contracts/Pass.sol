@@ -122,8 +122,8 @@ contract Pass is ERC1155, Ownable {
         if(passesLeftCurrPrice == 0){
             passesLeftCurrPrice = 5;
         }
-        uint256 restOfPasses = qty - passesLeftCurrPrice;
         if(qty > passesLeftCurrPrice){
+            uint256 restOfPasses = qty - passesLeftCurrPrice;
             uint256 numPriceInc = restOfPasses/5;
             passPrice[passId] += numPriceInc* priceInc;
         }
