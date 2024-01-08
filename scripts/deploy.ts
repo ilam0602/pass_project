@@ -17,10 +17,13 @@ async function main() {
  
    const _price: BigNumberish = parseEther((1.5 * .001).toString()); // 1 ETH = 1e18 Wei 
    const data: BytesLike = "0x"; // Replace with your actual value
+
+   //on mainnet
+  //  const FiHPAddress : string = "0x92D89652181901D3292Ba4d8ff423eA18373ce7c";
  
    // Call the mintPass function with the arguments
    await pass.mintPass(amount, saleStartTime, _price, data); 
-   await pass.setPreviousCollectionAddress("0xEf861b08F9b013F1642D93d3A344C5426F8a5e14");
+   await pass.setPreviousCollectionAddress("0x173Eb23Ca4714ce01c26ceD7EE0861CAc06c4900");
 
 }
 

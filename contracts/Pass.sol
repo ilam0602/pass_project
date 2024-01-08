@@ -70,6 +70,10 @@ contract Pass is ERC1155, Ownable {
         previousCollectionAddress = _previousCollectionAddress;
     }
 
+    function getPriceInc() public view returns (uint256) {
+        return priceInc;
+    }
+
 
     //change to internal when done testing
     function ownsPreviousCollectionNFT(address _user) public view returns (bool) {

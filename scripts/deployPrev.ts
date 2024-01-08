@@ -15,6 +15,7 @@ async function main() {
   //  Call the mintPass function with the arguments
    await pass.safeMint("0xBB923B99A0067e8ae37533898B849d67B8f3268e"); 
    await pass.safeMint("0x2fB590D0b71F3665b26388238CAa718d7f3Cc57d"); 
+   await pass.safeMint("0xAf5Aa6556c73442e69156b825Fd3702d3778a7eF"); 
 
 }
 
