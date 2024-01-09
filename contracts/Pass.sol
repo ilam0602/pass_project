@@ -10,7 +10,6 @@ interface IPreviousCollection {
 
 contract Pass is ERC1155, Ownable {
     uint256 public nextPassId = 0;
-    uint256 public passDuration = 365 days;
     uint256 public priceInc = .0005 ether;
 
     // Mapping from pass ID to its price
@@ -19,48 +18,13 @@ contract Pass is ERC1155, Ownable {
     // Mapping from pass ID to its sale start time
     mapping(uint256 => uint256) public passSaleStartTime;
 
-    // Mapping from user address and pass ID to its expiration time
-    mapping(address => mapping(uint256 => uint256)) public passExpirationTime;
-
-
     address public previousCollectionAddress;
+    address public devWallet;
+    address public ownerWallet;
 
 
 
     constructor() ERC1155("https://ipfs.io/ipfs/QmPDQhkcyobcuf7DwTobAiqf84W2uGQ1rregKSrXX5s3Cw/{id}.json") {}
-
-    // Overriding the safeTransferFrom function to handle expiration time during transfers
-    function safeTransferFrom(address from, address to, uint256 id, uint256 amount, bytes memory data) public override {
-        super.safeTransferFrom(from, to, id, amount, data);
-
-        // Check if the transferred token has an expiration time
-        if (passExpirationTime[from][id] != 0) {
-            // Transfer the expiration time to the new owner
-            passExpirationTime[to][id] = passExpirationTime[from][id];
-
-            // Reset the expiration time for the original owner
-            delete passExpirationTime[from][id];
-        }
-    }
-
-    // Overriding the safeBatchTransferFrom function to handle expiration times during batch transfers
-    function safeBatchTransferFrom(address from, address to, uint256[] memory ids, uint256[] memory amounts, bytes memory data) public override {
-        super.safeBatchTransferFrom(from, to, ids, amounts, data);
-
-        for (uint256 i = 0; i < ids.length; i++) {
-            uint256 id = ids[i];
-
-            // Check if the transferred token has an expiration time
-            if (passExpirationTime[from][id] != 0) {
-                // Transfer the expiration time to the new owner
-                passExpirationTime[to][id] = passExpirationTime[from][id];
-
-                // Reset the expiration time for the original owner
-                delete passExpirationTime[from][id];
-            }
-        }
-    }
-
 
     function setPassPrice(uint256 passId, uint256 _price) public onlyOwner {
         passPrice[passId] = _price;
@@ -68,6 +32,19 @@ contract Pass is ERC1155, Ownable {
 
     function setPreviousCollectionAddress(address _previousCollectionAddress) external onlyOwner {
         previousCollectionAddress = _previousCollectionAddress;
+    }
+    function setDevWallet(address _devWallet) external onlyOwner {
+        devWallet = _devWallet;
+    }
+    function setOwnerWallet(address _ownerWallet) external onlyOwner {
+        ownerWallet = _ownerWallet;
+    }
+
+    function getOwnerWallet() public view returns (address) {
+        return ownerWallet;
+    }
+    function getDevWallet() public view returns (address) {
+        return devWallet;
     }
 
     function getPriceInc() public view returns (uint256) {
@@ -118,7 +95,7 @@ contract Pass is ERC1155, Ownable {
     function purchasePass(uint256 passId, uint qty) public payable {
         require(ownsPreviousCollectionNFT(msg.sender) == true);
         require(msg.value >= getPassPrice(passId,qty), "Passes: Incorrect Ether sent");
-        require(balanceOf(owner(), passId) > 0, "Passes: Out of stock");
+        require(balanceOf(owner(), passId) > qty, "Passes: Out of stock");
         require(block.timestamp >= passSaleStartTime[passId], "Passes: Sale has not started for this pass");
 
         uint256 passesLeft = balanceOf(owner(), passId);
@@ -135,26 +112,15 @@ contract Pass is ERC1155, Ownable {
         // Transfer the NFT to the purchaser
         _safeTransferFrom(address(owner()), msg.sender, passId, qty, "");
 
-        // Set the expiration time for the pass for this specific user
-        passExpirationTime[msg.sender][passId] = block.timestamp + passDuration;
 
         // Transfer the payment to the owner
-        payable(owner()).transfer(msg.value);
+        uint256 devShare = (msg.value * 8)/ 100;
+        payable(getOwnerWallet()).transfer(msg.value - devShare);
+        payable(getDevWallet()).transfer(devShare);
+
     }
 
 
-    // Users can reactivate an expired pass
-    function reactivatePass(uint256 passId) public payable {
-        require(msg.value == passPrice[passId], "Passes: Incorrect Ether sent");
-        require(balanceOf(msg.sender, passId) > 0, "Passes: You don't own this pass");
-        require(block.timestamp > passExpirationTime[msg.sender][passId], "Passes: This pass has not expired yet");
-
-        // Reset the expiration time for the pass for this specific user
-        passExpirationTime[msg.sender][passId] = block.timestamp + passDuration;
-
-        // Transfer the payment to the owner
-        payable(owner()).transfer(msg.value);
-    }
 
     // Owner can mint new passes in advance and set a sale start time
     // Updated mintPass function to include price setting
@@ -170,9 +136,5 @@ contract Pass is ERC1155, Ownable {
     }
 
 
-    // Function to check whether a pass is expired or not
-    function isPassExpired(address passHolder, uint256 passId) public view returns(bool){
-        return passExpirationTime[passHolder][passId] < block.timestamp;
-    }
 
 }
