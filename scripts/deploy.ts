@@ -28,7 +28,7 @@ async function main() {
    await pass.mintPass(amount, saleStartTime, _price, data); 
    await pass.setPreviousCollectionAddress("0x0fA2a65C581C9618A33f43bca37179dc28619F0c");
    await pass.setDevWallet("0x2fB590D0b71F3665b26388238CAa718d7f3Cc57d");
-   await pass.setOwnerWallet("0x0fA2a65C581C9618A33f43bca37179dc28619F0c");
+   await pass.setOwnerWallet("0xBB923B99A0067e8ae37533898B849d67B8f3268e");
 
 }
 
