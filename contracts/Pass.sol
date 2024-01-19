@@ -24,7 +24,7 @@ contract Pass is ERC1155, Ownable {
 
 
 
-    constructor() ERC1155("https://ipfs.io/ipfs/QmPDQhkcyobcuf7DwTobAiqf84W2uGQ1rregKSrXX5s3Cw/{id}.json") {}
+    constructor() ERC1155("https://ipfs.io/ipfs/QmdQkZT3JXas3hoCG9PeF7w41ez2hnWwFhLZcjDkGrC9Mo/{id}.json") {}
 
     function setPassPrice(uint256 passId, uint256 _price) public onlyOwner {
         passPrice[passId] = _price;
@@ -39,18 +39,12 @@ contract Pass is ERC1155, Ownable {
     function setOwnerWallet(address _ownerWallet) external onlyOwner {
         ownerWallet = _ownerWallet;
     }
-
-    function getOwnerWallet() public view returns (address) {
-        return ownerWallet;
+    function setURI(string memory newuri) public onlyOwner {
+        _setURI(newuri);
     }
-    function getDevWallet() public view returns (address) {
-        return devWallet;
+    function setPriceInc(uint256 _priceInc) public onlyOwner {
+        priceInc = _priceInc;
     }
-
-    function getPriceInc() public view returns (uint256) {
-        return priceInc;
-    }
-
 
     //change to internal when done testing
     function ownsPreviousCollectionNFT(address _user) public view returns (bool) {
@@ -94,7 +88,7 @@ contract Pass is ERC1155, Ownable {
     // Users can buy a pass by sending ether
     function purchasePass(uint256 passId, uint qty) public payable {
         require(ownsPreviousCollectionNFT(msg.sender) == true);
-        require(msg.value >= getPassPrice(passId,qty), "Passes: Incorrect Ether sent");
+        require(msg.value == getPassPrice(passId,qty), "Passes: Incorrect Ether sent");
         require(balanceOf(owner(), passId) > qty, "Passes: Out of stock");
         require(block.timestamp >= passSaleStartTime[passId], "Passes: Sale has not started for this pass");
 
@@ -115,8 +109,8 @@ contract Pass is ERC1155, Ownable {
 
         // Transfer the payment to the owner
         uint256 devShare = (msg.value * 8)/ 100;
-        payable(getOwnerWallet()).transfer(msg.value - devShare);
-        payable(getDevWallet()).transfer(devShare);
+        payable(ownerWallet).transfer(msg.value - devShare);
+        payable(devWallet).transfer(devShare);
 
     }
 

@@ -1,8 +1,0 @@
-{
-    "name:": "GA",
-    "description": "general admission",
-    "image": "https://miro.medium.com/v2/resize:fit:1400/1*64Yux3LVret8J5WbmKPCbA.jpeg",
-    "properties": {
-        "level":"ga"
-    }
-}

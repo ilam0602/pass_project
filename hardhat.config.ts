@@ -13,7 +13,13 @@ const config: HardhatUserConfig = {
     },
     sepolia: {
       url: `https://eth-sepolia.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
-      accounts: [process.env.PRIVATE_KEY || '']
+      accounts: [process.env.PRIVATE_KEY || ''],
+      // gasPrice: 15000000000 //15gwei
+    },
+    mainnet: {
+      url:`https://eth-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_MAIN_API_KEY}`,
+      accounts: [process.env.PRIVATE_KEY_MAIN || ''],
+      // gasPrice: 15000000000 //15gwei
     }
   },
   etherscan: {

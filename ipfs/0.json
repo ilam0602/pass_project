@@ -1,8 +1,10 @@
 {
-    "name:": "VIP",
-    "description": "vip access",
-    "image": "https://miro.medium.com/v2/resize:fit:1400/1*64Yux3LVret8J5WbmKPCbA.jpeg",
-    "properties": {
-        "level":"vip"
-    }
+    "name": "FiHP Global Membership 2024",
+    "description": "Enjoy unlimited VIP access to global music festivals, exclusive entry to top international events, and private FiHP gatherings. Benefit from unique merchandise, airdrops, and access to a members-only portal for buying tickets to live events around the world.",
+    "image": "https://fihp.s3.amazonaws.com/FiHPpass.gif",
+    "properties": 
+        {
+         "Edition": "All-Access Pass",
+          "Year": "2024"
+        } 
 }
