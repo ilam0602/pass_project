@@ -61,25 +61,33 @@ contract Pass is ERC1155, Ownable {
             passesLeftCurrPrice = 5;
         }
 
+        //if wanted quantity is less than or equal to
+        //passes left at current price, we return current price * qty
         if(qty <= passesLeftCurrPrice){
             return currPrice * qty;
         }
         
+        //add the passes left at current price to total price
         uint256 totalPrice = passesLeftCurrPrice * currPrice;
 
+        //increment current price
         currPrice += priceInc;
 
+        //calculate the number of passes left
         uint256 restOfPasses = qty - passesLeftCurrPrice;
 
+        //calculate number of times price needs to be increased
         uint256 numPriceInc = restOfPasses / 5;
-
-        uint256 remain = restOfPasses % 5;
-
+        
+        //increment total price by the 
+        //number of times price needs to be increased
         for(uint i = 0; i < numPriceInc;i++){
             totalPrice += currPrice * 5;
             currPrice += priceInc;
         }
 
+        //add the remaining passes to total price
+        uint256 remain = restOfPasses % 5;
         totalPrice += remain * currPrice;
 
         return totalPrice;
